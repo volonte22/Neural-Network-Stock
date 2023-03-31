@@ -1,0 +1,141 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import LSTM
+from keras.layers import Dropout
+from keras.layers import Dense
+import keras as keras
+import time
+
+
+
+# run and get model
+def Start():
+    # CREATE PREDICTION MODEL
+    dataset_train = pd.read_csv('AAPL ALLTIME.csv')  # read csv
+    training_set = dataset_train.iloc[:, 1:2].values
+
+    sc = MinMaxScaler(feature_range=(0, 1))
+    training_set_scaled = sc.fit_transform(training_set)
+    X = input("Make a new model? T/F: ")
+    count = 0
+    while (count == 0):
+        if X == 'T':
+            count = 1
+        elif X == 'F':
+            count = 1
+        elif X != 'T':
+            X = input("Make a new model? T/F: ")
+
+    if (X == 'T'):
+        # CREATE PREDICTION MODEL
+
+        X_train = []
+        y_train = []
+        for i in range(60, 10475):
+            X_train.append(training_set_scaled[i - 60:i, 0])
+            y_train.append(training_set_scaled[i, 0])
+        X_train, y_train = np.array(X_train), np.array(y_train)
+        X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+
+        model = Sequential()
+        model.add(LSTM(units=50, return_sequences=True, input_shape=(X_train.shape[1], 1)))
+        model.add(Dropout(0.2))
+        model.add(LSTM(units=50, return_sequences=True))
+        model.add(Dropout(0.2))
+        model.add(LSTM(units=50, return_sequences=True))
+        model.add(Dropout(0.2))
+        model.add(LSTM(units=50))
+        model.add(Dropout(0.2))
+        model.add(Dense(units=1))
+        model.compile(optimizer='adam', loss='mean_squared_error')
+        model.fit(X_train, y_train, epochs=100, batch_size=32)
+
+        # save prediction model
+        model.save('APPLALLTIMEMODEL')
+    else:
+        model = keras.models.load_model('APPLALLTIMEMODEL')
+
+    ####################################################################################
+
+    # TEST DATA ON TRAINING SET PREDICTION MODELS
+
+            # june to december 2022
+    dataset_test = pd.read_csv('AAPL_AUG2022_DEC2022.csv')
+    real_stock_price = dataset_test.iloc[:, 1:2].values
+
+    dataset_total = pd.concat((dataset_train['Open'], dataset_test['Open']), axis=0)
+    inputs = dataset_total[len(dataset_total) - len(dataset_test) - 60:].values
+    inputs = inputs.reshape(-1, 1)
+    inputs = sc.transform(inputs)
+    X_test = []
+    for i in range(60, 384):
+        X_test.append(inputs[i - 60:i, 0])
+    X_test = np.array(X_test)
+    X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+    predicted_stock_price = model.predict(X_test)
+    predicted_stock_price = sc.inverse_transform(predicted_stock_price)
+
+    plt.plot(real_stock_price, color='black', label='AAPL Stock Price')
+    plt.plot(predicted_stock_price, color='green', label='Predicted APPL Stock Price')
+    plt.title('AAPL Stock Price Prediction - AUG2022 -> Dec2022')
+    plt.xlabel('Time')
+    plt.ylabel('AAPL Stock Price')
+    plt.legend()
+    plt.show()
+
+    dataset_test = pd.read_csv('AAPL JULY2022_DEC2022.csv')
+    real_stock_price = dataset_test.iloc[:, 1:2].values
+
+    dataset_total = pd.concat((dataset_train['Open'], dataset_test['Open']), axis=0)
+    inputs = dataset_total[len(dataset_total) - len(dataset_test) - 60:].values
+    inputs = inputs.reshape(-1, 1)
+    inputs = sc.transform(inputs)
+    X_test = []
+    for i in range(60, 175):
+        X_test.append(inputs[i - 60:i, 0])
+    X_test = np.array(X_test)
+    X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+    predicted_stock_price = model.predict(X_test)
+    predicted_stock_price = sc.inverse_transform(predicted_stock_price)
+
+    plt.plot(real_stock_price, color='black', label='AAPL Stock Price')
+    plt.plot(predicted_stock_price, color='green', label='Predicted APPL Stock Price')
+    plt.title('AAPL Stock Price Prediction - JULY2022 -> Dec2022')
+    plt.xlabel('Time')
+    plt.ylabel('AAPL Stock Price')
+    plt.legend()
+    plt.show()
+
+            # oct to dec 2022
+    dataset_test = pd.read_csv('AAPL NOV2022_DEC2022.csv')
+    real_stock_price = dataset_test.iloc[:, 1:2].values
+
+    dataset_total = pd.concat((dataset_train['Open'], dataset_test['Open']), axis=0)
+    inputs = dataset_total[len(dataset_total) - len(dataset_test) - 60:].values
+    inputs = inputs.reshape(-1, 1)
+    inputs = sc.transform(inputs)
+    X_test = []
+    for i in range(60, 342):
+        X_test.append(inputs[i - 60:i, 0])
+    X_test = np.array(X_test)
+    X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+    predicted_stock_price = model.predict(X_test)
+    predicted_stock_price = sc.inverse_transform(predicted_stock_price)
+
+    plt.plot(real_stock_price, color='black', label='AAPL Stock Price')
+    plt.plot(predicted_stock_price, color='green', label='Predicted AAPL Stock Price')
+    plt.title('AAPL Stock Price Prediction - NOV2022 -> Dec2022')
+    plt.xlabel('Time')
+    plt.ylabel('AAPL Stock Price')
+    plt.legend()
+    plt.show()
+
+
+    ####################################################################################
+
+
+    # PREDICT FUTURE
